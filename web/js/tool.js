@@ -3,7 +3,7 @@ layui.define(['layer', 'laypage'], function (e) {
     var $ = layui.jquery = layui.$;
 
     e('tool', {
-        Weburl: 'http://localhost:1900',
+        Weburl: window.location.origin,
         loadData: function (jsonStr, ctl) {
             var obj = jsonStr;
             var key, value, tagName, type, arr;

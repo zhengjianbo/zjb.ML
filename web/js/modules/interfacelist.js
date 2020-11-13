@@ -38,7 +38,7 @@ layui.define(["table", "form"], function (t) {
         del: function (ids, callback) {
             $.ajax({
                 type: 'POST',
-                url: layui.tool.Weburl + '/ml/del',
+                url: layui.tool.Weburl + '/del',
                 data: { where: ids, tablename: 'jkdb' },
                 dataType: 'json',
                 success: function (msg) {
@@ -86,7 +86,7 @@ layui.define(["table", "form"], function (t) {
                         }
                         $.ajax({
                             type: 'POST',
-                            url: layui.tool.Weburl + '/ml/save',
+                            url: layui.tool.Weburl + '/save',
                             data: parobj,
                             dataType: 'json',
                             success: function (msg) {
@@ -152,11 +152,12 @@ layui.define(["table", "form"], function (t) {
     };
     tb.render({
         elem: "#LAY-app-content-list",
-        url: layui.tool.Weburl + '/ml/getjkdb_ui',
+        url: layui.tool.Weburl + '/getjkdb_ui',
         cols: [
             [
                 { type: "checkbox", fixed: "left" },
                 { field: "JKMC", title: "接口名称", minWidth: 100 },
+                { field: "JKSM", title: "接口说明", minWidth: 100 },
                 { title: "操作", width: 200, align: "center", fixed: "right", toolbar: "#table-content-list" }
             ]
         ],

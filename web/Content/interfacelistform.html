@@ -23,7 +23,7 @@
 
                 <div class="layui-card-body layui-row layui-col-space10">
                     <div class="layui-row">
-                        <div class="layui-col-xs6">
+                        <div class="layui-col-xs4">
                             <div class="layui-form-item">
                                 <label class="layui-form-label">接口名称:</label>
                                 <div class="layui-input-block">
@@ -34,8 +34,19 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="layui-col-xs4">
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">接口类型:</label>
+                                <div class="layui-input-block">
 
-                        <div class="layui-col-xs6">
+                                    <select name="JKLX">
+                                        <option value="接口" selected>接口</option>
+                                        <option value="服务">服务</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-col-xs4">
                             <div class="layui-form-item">
                                 <label class="layui-form-label">说明:</label>
                                 <div class="layui-input-block">
@@ -74,16 +85,21 @@
             <div class="layui-card layui-col-space15">
                 <div class="layui-card-header">
                     <div class="layui-row">
-                        <div class="layui-col-xs6">
+                        <div class="layui-col-xs4">
                             <button lay-submit lay-filter="layuiadmin-app-form-submit-scts"
                                 class="layui-btn">生成调试</button><button lay-submit
                                 lay-filter="layuiadmin-app-form-submit-ts"
-                                class="layui-btn layui-btn-warm">开始调试</button><button lay-submit
-                                lay-filter="layuiadmin-app-form-submit-sc"
-                                class="layui-btn layui-btn-danger">生成独立服务</button>
-
+                                class="layui-btn layui-btn-warm">开始调试</button>
                         </div>
-                        <div class="layui-col-xs6">
+                        <div class="layui-col-xs4"><button lay-submit lay-filter="layuiadmin-app-form-submit-sc"
+                                class="layui-btn layui-btn-danger">生成独立服务</button>
+                            <button lay-submit lay-filter="layuiadmin-app-form-submit-az"
+                                class="layui-btn layui-btn-danger">安装</button>
+                            <button lay-submit lay-filter="layuiadmin-app-form-submit-qd"
+                                class="layui-btn layui-btn-danger">启动</button> <button lay-submit
+                                lay-filter="layuiadmin-app-form-submit-tz"
+                                class="layui-btn layui-btn-danger">停止</button></div>
+                        <div class="layui-col-xs4">
                             <button lay-submit lay-filter="layuiadmin-app-form-submit-cs" class="layui-btn">测试</button>
                         </div>
                     </div>
@@ -92,127 +108,171 @@
 
                     </div>
                 </div>
-                <div class="layui-card-body layui-row layui-col-space10">
-                    <pre id="txtCS" class="layui-code" lay-skin="notepad"> </pre>
-
-                </div>
             </div>
         </div>
-    </div>
 
-    <script src="../js/layui/layui.js"></script>
-    <script src="../js/vs/require.js"></script>
-    <script>
-        var meditor;
-        window.onresize = function () {
-            if (meditor) {
+        <script src="../js/layui/layui.js"></script>
+        <script src="../js/vs/require.js"></script>
+        <script>
+            var meditor;
+            window.onresize = function () {
+                if (meditor) {
+                    meditor.layout();
+                }
+            };
+
+            function createeidt(val) {
+                document.getElementById('txtJKSQL').innerHTML = "";
+                meditor = monaco.editor.create(document.getElementById('txtJKSQL'), {
+                    value: val,
+                    language: 'javascript' //这里是语言
+                });
+
+            }
+            require.config({
+                paths: {
+                    'vs': '../js/vs'
+                }
+            });
+            require(['vs/editor/editor.main'], function () {
+                meditor = monaco.editor.create(document.getElementById('txtJKSQL'), {
+                    language: 'javascript' //这里是语言
+                });
                 meditor.layout();
-            }
-        };
-
-        function createeidt(val) {
-            document.getElementById('txtJKSQL').innerHTML = "";
-            meditor = monaco.editor.create(document.getElementById('txtJKSQL'), {
-                value: val,
-                language: 'javascript' //这里是语言
             });
 
-        }
-        require.config({
-            paths: {
-                'vs': '../js/vs'
-            }
-        });
-        require(['vs/editor/editor.main'], function () {
-            meditor = monaco.editor.create(document.getElementById('txtJKSQL'), {
-                language: 'javascript' //这里是语言
-            });
-            meditor.layout();
-        });
-
-        layui.config({
-            base: '../js/' //静态资源所在路径
-        }).extend({
-            index: 'index' //主入口模块
-        }).use(['index', 'layedit', 'form'], function () {
-            var $ = layui.$,
-                form = layui.form;
-            layui.form.on("submit(layuiadmin-app-form-submit-scts)", function (_data) {
-                layui.jquery.ajax({
-                    type: 'POST',
-                    url: layui.tool.Weburl + '/ml/save_service',
-                    dataType: 'json',
-                    data:
-                    {
-                        rows: { JKMC: "zjb.debug", JKSQL: _data.field.JKSQL }
-                    },
-                    //   async: false,
-                    success: function (msg) {
-                        let ht = msg;
-                        if (msg instanceof Object) {
-                            ht = JSON.stringify(msg);
+            layui.config({
+                base: '../js/' //静态资源所在路径
+            }).extend({
+                index: 'index' //主入口模块
+            }).use(['index', 'layedit', 'form'], function () {
+                var $ = layui.$,
+                    form = layui.form;
+                layui.form.on("submit(layuiadmin-app-form-submit-scts)", function (_data) {
+                    layui.jquery('#txtCS').html("");
+                    //  layui.jquery("#layuiadmin-app-form-edit").trigger("click");
+                    layui.jquery.ajax({
+                        type: 'POST',
+                        url: layui.tool.Weburl + '/save_service',
+                        dataType: 'json',
+                        data:
+                        {
+                            rows: { JKMC: "zjb.debug", JKSQL: _data.field.JKSQL }
+                        },
+                        //   async: false,
+                        success: function (msg) {
+                            let ht = msg;
+                            if (msg instanceof Object) {
+                                ht = JSON.stringify(msg);
+                            }
+                            layui.jquery('#txtCS').html(ht);
                         }
-                        layui.jquery('#txtCS').html(ht);
-                    }
+                    });
                 });
-            });
-            layui.form.on("submit(layuiadmin-app-form-submit-ts)", function (_data) {
-                layui.jquery.ajax({
-                    type: 'POST',
-                    url: layui.tool.Weburl + '/ml/debug',
-                    //  dataType: 'json',
+                layui.form.on("submit(layuiadmin-app-form-submit-ts)", function (_data) {
+                    layui.jquery('#txtCS').html("");
+                    layui.jquery.ajax({
+                        type: 'POST',
+                        url: layui.tool.Weburl + '/debug',
+                        //  dataType: 'json',
 
-                    //   async: false,
-                    success: function (msg) {
-                        let ht = msg;
-                        if (msg instanceof Object) {
-                            ht = JSON.stringify(msg);
+                        //   async: false,
+                        success: function (msg) {
+                            let ht = msg;
+                            if (msg instanceof Object) {
+                                ht = JSON.stringify(msg);
+                            }
+                            layui.jquery('#txtCS').html(ht);
                         }
-                        layui.jquery('#txtCS').html(ht);
-                    }
+                    });
                 });
-            });
 
-
-            layui.form.on("submit(layuiadmin-app-form-submit-sc)", function (_data) {
-                layui.jquery.ajax({
-                    type: 'POST',
-                    url: layui.tool.Weburl + '/ml/save_service',
-                    dataType: 'json',
-                    data:
-                    {
-                        rows: { JKMC: _data.field.JKMC, JKSQL: _data.field.JKSQL }
-                    },
-                    //   async: false,
-                    success: function (msg) {
-                        let ht = msg;
-                        if (msg instanceof Object) {
-                            ht = JSON.stringify(msg);
+                layui.form.on("submit(layuiadmin-app-form-submit-sc)", function (_data) {
+                    layui.jquery('#txtCS').html("");
+                    //  layui.jquery("#layuiadmin-app-form-edit").trigger("click");
+                    layui.jquery.ajax({
+                        type: 'POST',
+                        url: layui.tool.Weburl + '/save_service',
+                        dataType: 'json',
+                        data:
+                        {
+                            rows: { JKMC: _data.field.JKMC, JKSQL: _data.field.JKSQL }
+                        },
+                        //   async: false,
+                        success: function (msg) {
+                            let ht = msg;
+                            if (msg instanceof Object) {
+                                ht = JSON.stringify(msg);
+                            }
+                            layui.jquery('#txtCS').html(ht);
                         }
-                        layui.jquery('#txtCS').html(ht);
-                    }
+                    });
                 });
-            });
-            layui.form.on("submit(layuiadmin-app-form-submit-cs)", function (_data) {
-                layui.jquery("#layuiadmin-app-form-edit").trigger("click");
-
-                layui.jquery.ajax({
-                    type: 'POST',
-                    url: layui.tool.Weburl + '/ml/' + _data.field.JKMC,
-                    //    dataType: 'json',
-                    //  data: { limit:100000000000,para:JSON.stringify({where:{$or:[{BMLX:'01'},{BMLX:'02'}]}}) },
-                    //   async: true,
-                    success: function (msg) {
-                        let ht = msg;
-                        if (msg instanceof Object) {
-                            ht = JSON.stringify(msg);
+                layui.form.on("submit(layuiadmin-app-form-submit-az)", function (_data) {
+                    layui.jquery('#txtCS').html("");
+                    // layui.jquery("#layuiadmin-app-form-edit").trigger("click");
+                    layui.jquery.ajax({
+                        type: 'POST',
+                        url: layui.tool.Weburl + '/install_package',
+                        dataType: 'json',
+                        data:
+                        {
+                            JKMC: _data.field.JKMC
+                        },
+                        //   async: false,
+                        success: function (msg) {
+                            let ht = msg;
+                            if (msg instanceof Object) {
+                                ht = JSON.stringify(msg);
+                            }
+                            layui.jquery('#txtCS').html(ht);
                         }
-                        layui.jquery('#txtCS').html(ht);
-                    }
+                    });
                 });
-            });
-        })
-    </script>
+                layui.form.on("submit(layuiadmin-app-form-submit-qd)", function (_data) {
+                    layui.jquery('#txtCS').html("");
+                    // layui.jquery("#layuiadmin-app-form-edit").trigger("click");
+                    layui.jquery.ajax({
+                        type: 'POST',
+                        url: layui.tool.Weburl + '/start_service',
+                        dataType: 'json',
+                        data:
+                        {
+                            JKMC: _data.field.JKMC
+                        },
+                        //   async: false,
+                        success: function (msg) {
+                            let ht = msg;
+                            if (msg instanceof Object) {
+                                ht = JSON.stringify(msg);
+                            }
+                            layui.jquery('#txtCS').html(ht);
+                        }
+                    });
+                });
+
+
+                layui.form.on("submit(layuiadmin-app-form-submit-cs)", function (_data) {
+                    layui.jquery('#txtCS').html("");
+                    // layui.jquery("#layuiadmin-app-form-edit").trigger("click");
+
+                    layui.jquery.ajax({
+                        type: 'POST',
+                        url: layui.tool.Weburl + '/' + _data.field.JKMC,
+                        //    dataType: 'json',
+                        //  data: { limit:100000000000,para:JSON.stringify({where:{$or:[{BMLX:'01'},{BMLX:'02'}]}}) },
+                        async: false,
+                        success: function (msg) {
+                            let ht = msg;
+                            if (msg instanceof Object) {
+                                ht = JSON.stringify(msg);
+                            }
+                            layui.jquery('#txtCS').html(ht);
+                        }
+                    });
+                });
+            })
+        </script>
 </body>
 
 </html>

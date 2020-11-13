@@ -3,10 +3,14 @@ const http = require('http');
 const Koa = require('koa')
 const Router = require('koa-router')
 const convert = require('koa-convert');
+const koaBody = require('koa-body');
 const session = require('koa-session')
 const mgdb = require('../module/mgdb');
 const token = require('./token');
+const fs = require('fs')
+const path = require('path')
 const vm = require('vm')
+var UUID = require('uuid');
 class Route {
     constructor() {
         this.Init()
@@ -24,6 +28,7 @@ class Route {
         this.router = new Router();
         this.tokens = null;
         const server = http.Server(app.callback());
+
         const CONFIG = {
             key: 'koa:sess', /* 默认的cookie签名 */
             maxAge: 86400000,/* cookie的最大过期时间 */
@@ -34,7 +39,12 @@ class Route {
             rolling: false, /** 每次请求强行设置cookie */
             renew: false, /** cookie快过期时自动重新设置*/
         };
-
+        app.use(koaBody({
+            multipart: true,
+            formidable: {
+                maxFileSize: 2000 * 1024 * 1024    // 设置上传文件大小最大限制，默认2M
+            }
+        }))
         app.use(session(CONFIG, app));
         app.use(require('koa-compress')());
         app.use(convert(require('koa-cors')()));
@@ -72,14 +82,67 @@ class Route {
         try {
             result = await script.runInContext(vm.createContext(__para));
         } catch (e) {
-            result = { code: 1001, msg: e.message };
+            result = e;
         }
         return result;
     }
     Start() {
         console.log(`[Api] 接口服务已经运行 ${config.service_ip}:${config.service_port}`);
         let that = this;
-        this.router.all('/ml/:jkdm', async function (ctx, next) {
+        this.router.post('/uploader', async function (ctx, next) {
+            // 上传多个文件
+            const files = ctx.request.files.files || ctx.request.files.file; // 获取上传文件
+            if (!files) {
+                ctx.body = { code: 1001, msg: "没有文件上传", data: [] };
+                return;
+            }
+            let result = [];
+            if (files instanceof Array) {
+                for (let file of files) {
+                    // 创建可读流
+                    const reader = fs.createReadStream(file.path);
+                    var extname = path.extname(file.name)
+                    let newfileName = UUID.v1() + extname;
+                    // 获取上传文件扩展名
+                    let filePath = path.join(process.cwd(), 'web/upload') + `/${newfileName}`;
+                    // 创建可写流
+                    const upStream = fs.createWriteStream(filePath);
+                    // 可读流通过管道写入可写流
+                    reader.pipe(upStream);
+                    let newfile = { ID: UUID.v1(), SCWJM: file.name, XWJM: newfileName }
+                    let re = await mgdb.mdb.Add([newfile], 'fjxx');
+                    result.push("upload/" + newfileName);
+                }
+            }
+            else {
+                // 创建可读流
+                const reader = fs.createReadStream(files.path);
+                var extname = path.extname(files.name)
+                let newfileName = UUID.v1() + extname;
+                let filePath = path.join(process.cwd(), 'web/upload') + `/${newfileName}`;
+                // 创建可写流
+                const upStream = fs.createWriteStream(filePath);
+                // 可读流通过管道写入可写流
+                reader.pipe(upStream);
+                let newfile = { ID: UUID.v1(), SCWJM: files.name, XWJM: newfileName }
+                let re = await mgdb.mdb.Add([newfile], 'fjxx');
+                result.push("upload/" + newfileName);
+            }
+            //图片写入地址；
+
+            //var mgdb = require('./mgdb');
+            //    let result = await mgdb.mdb.Add([newfile], 'fjxx');
+            if (result) {
+                ctx.body = { code: 200, msg: "成功", data: result };
+            }
+            else {
+                ctx.body = { code: 65535, msg: "失败", data: [] };
+            }
+
+
+        });
+
+        this.router.all('/:jkdm', async function (ctx, next) {
             let params = ctx.request.method.toLowerCase() == "post" ? ctx.request.body : ctx.request.query;
             let headers = ctx.request.headers;
             let accesstoken = headers.accesstoken || ctx.cookies.get("x-access-token");
@@ -92,21 +155,6 @@ class Route {
                     ctx.session.isapp = true;
                 }
             }
-            // if (!ctx.session.sign && ctx.params.jkdm != "Login"
-            //     && ctx.params.jkdm != "reg" && ctx.params.jkdm != "getCode"
-            //     && ctx.params.jkdm != "getwxrygl"
-            //     && ctx.params.jkdm != "getxtgl_ui"
-            //     && ctx.params.jkdm != "Logout"
-            //     && ctx.params.jkdm != "sendmsg"
-            //     && ctx.params.jkdm != "tsrygl"
-            //     && ctx.params.jkdm != "getjkdb_ui"
-            //     && ctx.params.jkdm != "settzwy") {
-            //     ctx.body = { msg: "没有权限", code: 1001 };
-            //     return;
-            // }
-            //  var tablename = ctx.params.tablename;
-            //  params.session = ctx.session;
-            // params.tablename = ctx.params.tablename;
             let para = {
                 para: params,
                 session: ctx.session, headers: headers,
